@@ -3,6 +3,7 @@
 #include <DS1307RTC.h>
 #include <LiquidCrystal.h>
 #include <Servo.h>
+#include <IRremote.h>
 
 int rs=7;
 int en=8;
@@ -16,9 +17,14 @@ int buzzPin = 4;
 int buttonPin = 2;
 int buttonState = 0;
 
-int alrm_h = 22;
-int alrm_m = 18;
+int alrm_h = 18;
+int alrm_m = 25;
 int alrm_s = 0;
+
+int IRpin = 13;
+IRrecv IR(IRpin);
+decode_results cmd;
+String myCom;
 
 LiquidCrystal lcd(rs,en,d4,d5,d6,d7);
 Servo servo;
@@ -34,10 +40,14 @@ void setup() {
   pinMode(buzzPin,OUTPUT);
 
   pinMode(buttonPin, INPUT);
+
+  IR.enableIRIn();
   
 }
  
 void loop() {
+  while (IR.decode(&cmd)==0){ 
+
   tmElements_t tm;
 
   lcd.setCursor(0,0);
@@ -82,8 +92,31 @@ void loop() {
     servo.write(90);
     noTone(buzzPin);
   }
-
+  
   }
+  Serial.println(cmd.value,HEX);
+  delay(1500);
+  IR.resume();
+ 
+  if (cmd.value==0xFF629D){
+    alrm_h += 1;
+  }
+  if (cmd.value==0xFFA857){
+    alrm_h -= 1;
+  }
+  if (cmd.value==0xFF906F){
+    alrm_m += 1;
+  }
+  if (cmd.value==0xFFE01F){
+    alrm_m -= 1;
+  }
+  if (cmd.value==0xFFA25D){
+    servo.write(39); 
+    delay(2000);
+    servo.write(90);
+  }
+
+}
 
 void print2digits(int number) {
   if (number >= 0 && number < 10) {
